@@ -1,0 +1,7 @@
+*.lock.hcl
+*.tfstate
+*.backup
+.terraform
+.vscode
+terraform.tfvars
+install-config.yaml
