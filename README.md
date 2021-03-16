@@ -84,6 +84,7 @@ EOF
 Apply the terraform plan.
 
 ```sh
+export GANDI_KEY="123...456"
 terraform apply
 ```
 
