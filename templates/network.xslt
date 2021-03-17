@@ -23,7 +23,8 @@
           <dnsmasq:option value="auth-zone=${network_domain}"/>
 
           <!-- Wildcard route -->
-          <dnsmasq:option value="address=/${alias}/${ip}"/>
+          <dnsmasq:option value="host-record=lb.${network_domain},${ip}"/>
+          <dnsmasq:option value="cname=*.apps.${network_domain},lb.${network_domain}"/>
         </dnsmasq:options>
     </xsl:copy>
   </xsl:template>
