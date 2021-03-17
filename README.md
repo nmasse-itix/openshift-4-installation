@@ -43,6 +43,22 @@ curl -Lo /tmp/lego.tgz https://github.com/go-acme/lego/releases/download/v4.3.1/
 sudo tar zxvf /tmp/lego.tgz -C /usr/local/bin lego
 ```
 
+Create the template files from their samples.
+
+```sh
+cp terraform.tfvars.sample terraform.tfvars
+cp local.env.sample local.env
+cp install-config.yaml.sample install-config.yaml
+```
+
+Edit **provider.tf** and change the connection string.
+
+```
+provider "libvirt" {
+  uri = "qemu+ssh://user@libvirt.server/system"
+}
+```
+
 ### On the server
 
 Install libvirt.
@@ -66,14 +82,6 @@ curl -Lo /var/lib/libvirt/images/centos-stream-8.qcow2 http://cloud.centos.org/c
 ```
 
 ## Install
-
-Create the template files from their sample.
-
-```sh
-cp terraform.tfvars.sample terraform.tfvars
-cp local.env.sample local.env
-cp install-config.yaml.sample install-config.yaml
-```
 
 Initialize a new cluster.
 
