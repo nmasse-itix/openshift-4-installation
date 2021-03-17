@@ -18,7 +18,7 @@ resource "libvirt_domain" "worker" {
   vcpu            = var.worker_vcpu
   memory          = var.worker_memory_size
   coreos_ignition = libvirt_ignition.worker_ignition.id
-  autostart       = true
+  autostart       = false
 
   cpu = {
     mode = "host-passthrough"

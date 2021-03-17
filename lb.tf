@@ -38,7 +38,7 @@ resource "libvirt_domain" "lb" {
   vcpu      = var.lb_vcpu
   memory    = var.lb_memory_size
   cloudinit = libvirt_cloudinit_disk.lb_cloudinit.id
-  autostart = true
+  autostart = false
 
   cpu = {
     mode = "host-passthrough"
