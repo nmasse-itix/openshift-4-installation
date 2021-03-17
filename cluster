@@ -128,6 +128,7 @@ spec:
     name: RedHatSSO
     type: Google
 EOF
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" adm policy add-cluster-role-to-user cluster-admin "$OCP_ADMIN"
 }
 
 function post_install () {
