@@ -19,25 +19,29 @@ resource "local_file" "dns_config" {
 resource "null_resource" "dnsmasq_config" {
   triggers = {
     network_id = libvirt_network.ocp_net.id
+    libvirt_server = local.libvirt_server
+    libvirt_username = local.libvirt_username
+    network_domain = local.network_domain
   }
 
   connection {
     type = "ssh"
-    host = local.libvirt_server
-    user = local.libvirt_username
+    host = self.triggers.libvirt_server
+    user = self.triggers.libvirt_username
   }
 
   provisioner "remote-exec" {
     inline = [
-      "echo 'server=/${local.network_domain}/${cidrhost(var.network_ip_range, 1)}' | sudo tee /etc/NetworkManager/dnsmasq.d/libvirt-ocp-${var.cluster_name}.conf",
+      "echo 'server=/${local.network_domain}/${cidrhost(var.network_ip_range, 1)}' | sudo tee /etc/NetworkManager/dnsmasq.d/zone-${local.network_domain}.conf",
       "sudo pkill -f '[d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq'"
     ]
   }
 
   provisioner "remote-exec" {
     when = destroy
+    on_failure = continue
     inline = [
-      "sudo rm -f /etc/NetworkManager/dnsmasq.d/libvirt-ocp-${var.cluster_name}.conf",
+      "sudo rm -f /etc/NetworkManager/dnsmasq.d/zone-${self.triggers.network_domain}.conf",
       "sudo pkill -f '[d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq'"
     ]
   }
