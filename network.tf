@@ -31,6 +31,6 @@ resource "libvirt_network" "ocp_net" {
   }
 
   xml {
-    xslt = templatefile("${path.module}/templates/network.xslt", { alias = "apps.${local.network_domain}", ip = cidrhost(var.network_ip_range, 4) })
+    xslt = templatefile("${path.module}/templates/network.xslt", { alias = "apps.${local.network_domain}", ip = cidrhost(var.network_ip_range, 4), network_domain = local.network_domain })
   }
 }

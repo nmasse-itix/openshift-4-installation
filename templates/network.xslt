@@ -17,7 +17,13 @@
       <xsl:copy-of select="@*"/>
       <xsl:copy-of select="node()"/>
         <dnsmasq:options>
-            <dnsmasq:option value="address=/${alias}/${ip}"/>
+          <!-- fix for the 5s timeout on DNS -->
+          <!-- see https://www.math.tamu.edu/~comech/tools/linux-slow-dns-lookup/ -->
+          <dnsmasq:option value="auth-server=${network_domain},"/>
+          <dnsmasq:option value="auth-zone=${network_domain}"/>
+
+          <!-- Wildcard route -->
+          <dnsmasq:option value="address=/${alias}/${ip}"/>
         </dnsmasq:options>
     </xsl:copy>
   </xsl:template>
