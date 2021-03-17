@@ -5,3 +5,5 @@
 .vscode
 terraform.tfvars
 install-config.yaml
+.lego
+local.env
