@@ -19,6 +19,10 @@ resource "libvirt_domain" "bootstrap" {
   memory          = var.bootstrap_memory_size
   coreos_ignition = libvirt_ignition.bootstrap_ignition.id
 
+  cpu = {
+    mode = "host-passthrough"
+  }
+
   disk {
     volume_id = element(libvirt_volume.bootstrap_disk.*.id, count.index)
   }

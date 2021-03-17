@@ -20,6 +20,10 @@ resource "libvirt_domain" "worker" {
   coreos_ignition = libvirt_ignition.worker_ignition.id
   autostart       = true
 
+  cpu = {
+    mode = "host-passthrough"
+  }
+
   disk {
     volume_id = element(libvirt_volume.worker_disk.*.id, count.index)
   }

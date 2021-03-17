@@ -40,6 +40,10 @@ resource "libvirt_domain" "lb" {
   cloudinit = libvirt_cloudinit_disk.lb_cloudinit.id
   autostart = true
 
+  cpu = {
+    mode = "host-passthrough"
+  }
+
   disk {
     volume_id = libvirt_volume.lb_disk.id
   }

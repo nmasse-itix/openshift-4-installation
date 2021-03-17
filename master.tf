@@ -20,6 +20,10 @@ resource "libvirt_domain" "master" {
   coreos_ignition = libvirt_ignition.master_ignition.id
   autostart       = true
 
+  cpu = {
+    mode = "host-passthrough"
+  }
+
   disk {
     volume_id = element(libvirt_volume.master_disk.*.id, count.index)
   }
