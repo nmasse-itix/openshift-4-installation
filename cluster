@@ -101,7 +101,7 @@ EOF
 
   # Deploy certificate to api
   oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" create secret tls api-certs-$(date "+%Y-%m-%d") --cert=.lego/certificates/$LE_API_HOSTNAME.crt --key=.lego/certificates/$LE_API_HOSTNAME.key -n openshift-config --dry-run -o yaml > "$cluster_name/api-certs.yaml"
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f "$cluster_name/router-certs.yaml" -n openshift-ingress
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f "$cluster_name/api-certs.yaml" -n openshift-config
   oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" patch apiserver cluster --type=merge --patch-file=/dev/fd/0 <<EOF
 {"spec":{"servingCerts":{"namedCertificates":[{"names":["$LE_API_HOSTNAME"],"servingCertificate":{"name": "api-certs-$(date "+%Y-%m-%d")"}}]}}}
 EOF
