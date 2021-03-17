@@ -16,6 +16,18 @@ resource "local_file" "dns_config" {
   file_permission = "0644"
 }
 
+resource "local_file" "stop_sh" {
+  content         = templatefile("${path.module}/templates/stop.sh", { masters = libvirt_domain.master.*.name, workers = libvirt_domain.worker.*.name, lb = libvirt_domain.lb.name, storage = libvirt_domain.storage.name })
+  filename        = "${var.cluster_name}/stop.sh"
+  file_permission = "0755"
+}
+
+resource "local_file" "start_sh" {
+  content         = templatefile("${path.module}/templates/start.sh", { masters = local.master_nodes, workers = local.worker_nodes, others = local.additional_nodes })
+  filename        = "${var.cluster_name}/start.sh"
+  file_permission = "0755"
+}
+
 resource "null_resource" "dnsmasq_config" {
   triggers = {
     network_id = libvirt_network.ocp_net.id

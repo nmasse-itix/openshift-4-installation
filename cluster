@@ -70,6 +70,30 @@ function apply () {
   openshift-install --dir="$cluster_name" wait-for install-complete
 }
 
+function start () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  scp "$cluster_name/start.sh" "$LIBVIRT_USER@$LIBVIRT_SERVER:/tmp/start.sh"
+  ssh "$LIBVIRT_USER@$LIBVIRT_SERVER" /tmp/start.sh
+}
+
+function stop () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  scp "$cluster_name/stop.sh" "$LIBVIRT_USER@$LIBVIRT_SERVER:/tmp/stop.sh"
+  ssh "$LIBVIRT_USER@$LIBVIRT_SERVER" /tmp/stop.sh
+}
+
 function post_install_nfs () {
   local cluster_name="${1:-}"
 
@@ -155,6 +179,8 @@ if [ ! -e "local.env" ]; then
 fi
 
 source local.env
+export LC_ALL=C
+export LANG=C
 
 case "${1:-}" in
 init)
@@ -164,6 +190,30 @@ init)
   fi
   shift
   bootstrap "$@"
+;;
+start)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 start cluster-name"
+    exit 1
+  fi
+  shift
+  start "$@"
+;;
+stop)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 stop cluster-name"
+    exit 1
+  fi
+  shift
+  stop "$@"
+;;
+apply)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 apply cluster-name"
+    exit 1
+  fi
+  shift
+  apply "$@"
 ;;
 apply)
   if [ -z "${2:-}" ]; then
@@ -190,7 +240,7 @@ post-install)
   post_install "$@"
 ;;
 *)
-  echo "Usage: $0 {init|apply|post-install|destroy} cluster-name"
+  echo "Usage: $0 {init|apply|post-install|destroy|start|stop} cluster-name"
   exit 1
 ;;
 esac
