@@ -39,6 +39,7 @@ resource "libvirt_domain" "lb" {
   memory    = var.lb_memory_size
   cloudinit = libvirt_cloudinit_disk.lb_cloudinit.id
   autostart = false
+  qemu_agent = true
 
   cpu = {
     mode = "host-passthrough"
@@ -58,12 +59,20 @@ resource "libvirt_domain" "lb" {
     network_id     = libvirt_network.ocp_net.id
     addresses      = [cidrhost(var.network_ip_range, 4)]
     hostname       = "lb"
-    wait_for_lease = false
+
+    # When creating the domain resource, wait until the network interface gets
+    # a DHCP lease from libvirt, so that the computed IP addresses will be
+    # available when the domain is up and the plan applied.
+    wait_for_lease = true
   }
 
   network_interface {
     bridge         = var.external_ifname
     mac            = var.external_mac_address
-    wait_for_lease = false
+
+    # When creating the domain resource, wait until the network interface gets
+    # a DHCP lease from libvirt, so that the computed IP addresses will be
+    # available when the domain is up and the plan applied.
+    wait_for_lease = true
   }
 }
