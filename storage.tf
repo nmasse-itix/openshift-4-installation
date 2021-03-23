@@ -33,6 +33,7 @@ resource "libvirt_domain" "storage" {
   memory    = var.storage_memory_size
   cloudinit = libvirt_cloudinit_disk.storage_cloudinit.id
   autostart = false
+  qemu_agent = true
 
   cpu = {
     mode = "host-passthrough"

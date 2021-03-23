@@ -28,7 +28,7 @@ locals {
   master_nodes     = { for i in libvirt_domain.master : i.name => i.network_interface.0.addresses[0] }
   worker_nodes     = { for i in libvirt_domain.worker : i.name => i.network_interface.0.addresses[0] }
   bootstrap_nodes  = { for i in libvirt_domain.bootstrap : i.name => i.network_interface.0.addresses[0] }
-  additional_nodes = { (libvirt_domain.lb.name) = cidrhost(var.network_ip_range, 4), (libvirt_domain.storage.name) = libvirt_domain.storage.network_interface.0.addresses[0] }
+  additional_nodes = { (libvirt_domain.lb.name) = [ libvirt_domain.storage.network_interface.0.addresses[0], libvirt_domain.storage.network_interface.1.addresses[0] ], (libvirt_domain.storage.name) = libvirt_domain.storage.network_interface.0.addresses[0] }
   all_nodes        = merge(local.additional_nodes, local.master_nodes, local.worker_nodes, local.bootstrap_nodes)
 }
 
