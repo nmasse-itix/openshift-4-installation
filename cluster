@@ -60,9 +60,7 @@ function apply () {
 
   # Auto-approve all pending CSRs
   for i in {0..240}; do
-    oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get csr --no-headers \
-      | awk '/Pending/ {print $1}' \
-      | xargs --no-run-if-empty oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" adm certificate approve
+    approve_csr "$cluster_name"
     sleep 15
   done &
 
@@ -79,6 +77,19 @@ function ping () {
   fi
 
   oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" whoami
+}
+
+function approve_csr () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get csr --no-headers \
+     | awk '/Pending/ {print $1}' \
+     | xargs --no-run-if-empty oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" adm certificate approve
 }
 
 function start () {
@@ -226,6 +237,14 @@ apply)
   shift
   apply "$@"
 ;;
+approve-csr)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 approve-csr cluster-name"
+    exit 1
+  fi
+  shift
+  approve_csr "$@"
+;;
 ping)
   if [ -z "${2:-}" ]; then
     echo "Usage: $0 ping cluster-name"
@@ -251,7 +270,7 @@ post-install)
   post_install "$@"
 ;;
 *)
-  echo "Usage: $0 {init|apply|post-install|destroy|start|stop} cluster-name"
+  echo "Usage: $0 {init|apply|approve-csr|post-install|destroy|ping|start|stop} cluster-name"
   exit 1
 ;;
 esac
