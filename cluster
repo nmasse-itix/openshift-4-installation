@@ -70,6 +70,17 @@ function apply () {
   openshift-install --dir="$cluster_name" wait-for install-complete
 }
 
+function ping () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" whoami
+}
+
 function start () {
   local cluster_name="${1:-}"
 
@@ -215,13 +226,13 @@ apply)
   shift
   apply "$@"
 ;;
-apply)
+ping)
   if [ -z "${2:-}" ]; then
-    echo "Usage: $0 apply cluster-name"
+    echo "Usage: $0 ping cluster-name"
     exit 1
   fi
   shift
-  apply "$@"
+  ping "$@"
 ;;
 destroy)
   if [ -z "${2:-}" ]; then
