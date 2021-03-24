@@ -3,3 +3,4 @@ external_mac_address = "02:00:00:00:00:04"
 public_cluster_ip    = "1.2.3.4"
 cluster_name         = "__CLUSTER_NAME__"
 bootstrap_nodes      = 1
+acme_account_email   = "your.username@redhat.com"

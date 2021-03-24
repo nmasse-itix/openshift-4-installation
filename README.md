@@ -36,11 +36,13 @@ make
 make install
 ```
 
-Install lego.
+Install the acme terraform provider.
 
 ```sh
-curl -Lo /tmp/lego.tgz https://github.com/go-acme/lego/releases/download/v4.3.1/lego_v4.3.1_linux_amd64.tar.gz
-sudo tar zxvf /tmp/lego.tgz -C /usr/local/bin lego
+git clone https://github.com/vancluever/terraform-provider-acme
+cd terraform-provider-acme
+mkdir -p ~/.terraform.d/plugins/vancluever/acme/2.3.0/linux_amd64/
+GOBIN=$HOME/.terraform.d/plugins/vancluever/acme/2.3.0/linux_amd64/ make
 ```
 
 Create the template files from their samples.
@@ -55,6 +57,12 @@ Install the required Ansible collections.
 
 ```sh
 ansible-galaxy collection install -r ansible/requirements.yaml
+```
+
+Initialize Terraform.
+
+```sh
+terraform init
 ```
 
 ### On the server

@@ -136,6 +136,10 @@ variable "bootstrap_memory_size" {
   default = 16 * 1024
 }
 
+variable "acme_account_email" {
+  type = string
+}
+
 locals {
   master_format  = "${var.cluster_name}-master-%02d"
   worker_format  = "${var.cluster_name}-worker-%02d"
