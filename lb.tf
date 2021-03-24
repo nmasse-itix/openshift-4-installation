@@ -34,11 +34,11 @@ resource "libvirt_volume" "lb_disk" {
 }
 
 resource "libvirt_domain" "lb" {
-  name      = local.lb_name
-  vcpu      = var.lb_vcpu
-  memory    = var.lb_memory_size
-  cloudinit = libvirt_cloudinit_disk.lb_cloudinit.id
-  autostart = false
+  name       = local.lb_name
+  vcpu       = var.lb_vcpu
+  memory     = var.lb_memory_size
+  cloudinit  = libvirt_cloudinit_disk.lb_cloudinit.id
+  autostart  = false
   qemu_agent = true
 
   cpu = {
@@ -56,9 +56,9 @@ resource "libvirt_domain" "lb" {
   }
 
   network_interface {
-    network_id     = libvirt_network.ocp_net.id
-    addresses      = [cidrhost(var.network_ip_range, 4)]
-    hostname       = "lb"
+    network_id = libvirt_network.ocp_net.id
+    addresses  = [cidrhost(var.network_ip_range, 4)]
+    hostname   = "lb"
 
     # When creating the domain resource, wait until the network interface gets
     # a DHCP lease from libvirt, so that the computed IP addresses will be
@@ -67,8 +67,8 @@ resource "libvirt_domain" "lb" {
   }
 
   network_interface {
-    bridge         = var.external_ifname
-    mac            = var.external_mac_address
+    bridge = var.external_ifname
+    mac    = var.external_mac_address
 
     # When creating the domain resource, wait until the network interface gets
     # a DHCP lease from libvirt, so that the computed IP addresses will be

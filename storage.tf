@@ -28,11 +28,11 @@ resource "libvirt_volume" "storage_data_disk" {
 }
 
 resource "libvirt_domain" "storage" {
-  name      = local.storage_name
-  vcpu      = var.storage_vcpu
-  memory    = var.storage_memory_size
-  cloudinit = libvirt_cloudinit_disk.storage_cloudinit.id
-  autostart = false
+  name       = local.storage_name
+  vcpu       = var.storage_vcpu
+  memory     = var.storage_memory_size
+  cloudinit  = libvirt_cloudinit_disk.storage_cloudinit.id
+  autostart  = false
   qemu_agent = true
 
   cpu = {
