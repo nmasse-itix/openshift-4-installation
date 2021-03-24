@@ -1,0 +1,77 @@
+- name: Add the libvirt server to the inventory
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - add_host:
+      hostname: '{{ lookup("env", "LIBVIRT_SERVER") }}'
+      ansible_host: '{{ lookup("env", "LIBVIRT_SERVER") }}'
+      ansible_user: '{{ lookup("env", "LIBVIRT_USER") }}'
+      groups: hypervisor
+
+- name: Stop the OpenShift cluster
+  hosts: hypervisor
+  gather_facts: no
+  become: yes
+  vars:
+    lb: '{{ nodes | selectattr("role", "eq", "lb") | first }}'
+    storage: '{{ nodes | selectattr("role", "eq", "storage") | first }}'
+    workers: '{{ nodes | selectattr("role", "eq", "worker") | list }}'
+    masters: '{{ nodes | selectattr("role", "eq", "master") | list }}'
+  tasks:
+  - name: Stop the workers
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      state: shutdown
+    loop: '{{ workers }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Wait for the workers to shutdown
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      command: info
+    register: vm
+    until: "vm[item.name].state == 'shutdown'"
+    retries: 24
+    delay: 5
+    loop: '{{ workers }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Stop the masters
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      state: shutdown
+    loop: '{{ masters }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Wait for the masters to shutdown
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      command: info
+    register: vm
+    until: "vm[item.name].state == 'shutdown'"
+    retries: 24
+    delay: 5
+    loop: '{{ masters }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Stop the remaining nodes
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      state: shutdown
+    loop:
+    - '{{ lb }}'
+    - '{{ storage }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Unconfigure name resolution for the cluster
+    file:
+      path: /etc/NetworkManager/dnsmasq.d/zone-{{ network_domain }}.conf
+      state: absent
+  
+  - name: Restart dnsmasq
+    command: pkill -f [d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq

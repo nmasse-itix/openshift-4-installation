@@ -1,0 +1,6 @@
+[hypervisor]
+
+[hypervisor:vars]
+network_domain=${network_domain}
+dns_server=${dns_server}
+nodes=${jsonencode(nodes)}

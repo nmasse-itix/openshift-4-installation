@@ -51,12 +51,10 @@ cp local.env.sample local.env
 cp install-config.yaml.sample install-config.yaml
 ```
 
-Edit **provider.tf** and change the connection string.
+Install the required Ansible collections.
 
-```
-provider "libvirt" {
-  uri = "qemu+ssh://user@libvirt.server/system"
-}
+```sh
+ansible-galaxy collection install -r ansible/requirements.yaml
 ```
 
 ### On the server

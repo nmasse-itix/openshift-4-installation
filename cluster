@@ -100,8 +100,7 @@ function start () {
     exit 1
   fi
 
-  scp "$cluster_name/start.sh" "$LIBVIRT_USER@$LIBVIRT_SERVER:/tmp/start.sh"
-  ssh "$LIBVIRT_USER@$LIBVIRT_SERVER" /tmp/start.sh
+  ansible-playbook -i "$cluster_name/inventory" ansible/start.yaml
 }
 
 function stop () {
@@ -112,8 +111,7 @@ function stop () {
     exit 1
   fi
 
-  scp "$cluster_name/stop.sh" "$LIBVIRT_USER@$LIBVIRT_SERVER:/tmp/stop.sh"
-  ssh "$LIBVIRT_USER@$LIBVIRT_SERVER" /tmp/stop.sh
+  ansible-playbook -i "$cluster_name/inventory" ansible/stop.yaml
 }
 
 function post_install_nfs () {
@@ -195,6 +193,32 @@ function post_install () {
   done
 }
 
+function shell () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  # Ansible
+  export DEFAULT_HOST_LIST="$PWD/$cluster_name"
+
+  # Terraform
+  export TF_CLI_ARGS="-var-file=$cluster_name/terraform.tfvars -state=$cluster_name/terraform.tfstate"
+
+  # OpenShift
+  export KUBECONFIG="$PWD/$cluster_name/auth/kubeconfig"
+  export OC_BINARY="$(which oc)"
+  export CLUSTER_NAME="$cluster_name"
+  export PS1="[$CLUSTER_NAME:\w] "
+  function oc () {
+    "$OC_BINARY" --insecure-skip-tls-verify "$@"
+  }
+  export -f oc
+  exec /bin/bash
+}
+
 if [ ! -e "local.env" ]; then
   echo "Please create local.env first!"
   exit 1
@@ -203,6 +227,7 @@ fi
 source local.env
 export LC_ALL=C
 export LANG=C
+export LIBVIRT_DEFAULT_URI="qemu+ssh://$LIBVIRT_USER@$LIBVIRT_SERVER/system"
 
 case "${1:-}" in
 init)
@@ -261,6 +286,14 @@ destroy)
   shift
   destroy "$@"
 ;;
+shell)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 shell cluster-name"
+    exit 1
+  fi
+  shift
+  shell "$@"
+;;
 post-install)
   if [ -z "${2:-}" ]; then
     echo "Usage: $0 post-install cluster-name"
@@ -270,7 +303,7 @@ post-install)
   post_install "$@"
 ;;
 *)
-  echo "Usage: $0 {init|apply|approve-csr|post-install|destroy|ping|start|stop} cluster-name"
+  echo "Usage: $0 {init|apply|approve-csr|post-install|destroy|shell|ping|start|stop} cluster-name"
   exit 1
 ;;
 esac

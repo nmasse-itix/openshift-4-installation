@@ -1,0 +1,55 @@
+- name: Add the libvirt server to the inventory
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - add_host:
+      hostname: '{{ lookup("env", "LIBVIRT_SERVER") }}'
+      ansible_host: '{{ lookup("env", "LIBVIRT_SERVER") }}'
+      ansible_user: '{{ lookup("env", "LIBVIRT_USER") }}'
+      groups: hypervisor
+
+- name: Start the OpenShift cluster
+  hosts: hypervisor
+  gather_facts: no
+  become: yes
+  vars:
+    lb: '{{ nodes | selectattr("role", "eq", "lb") | first }}'
+    storage: '{{ nodes | selectattr("role", "eq", "storage") | first }}'
+    workers: '{{ nodes | selectattr("role", "eq", "worker") | list }}'
+    masters: '{{ nodes | selectattr("role", "eq", "master") | list }}'
+  tasks:
+  - name: Configure name resolution for the cluster
+    template:
+      src: dnsmasq.conf.j2
+      dest: /etc/NetworkManager/dnsmasq.d/zone-{{ network_domain }}.conf
+  
+  - name: Restart dnsmasq
+    command: pkill -f [d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq
+  
+  - name: Start the Load Balancer and the Storage
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      state: running
+    loop:
+    - '{{ lb }}'
+    - '{{ storage }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Wait for the Load Balancer to appear
+    wait_for:
+      port: 443
+      host: '{{ lb.ip[1] }}'
+
+  - name: Wait for the NFS Server to appear
+    wait_for:
+      port: 2049
+      host: '{{ storage.ip }}'
+
+  - name: Start the Workers and the Masters
+    community.libvirt.virt:
+      name: '{{ item.name }}'
+      state: running
+    loop: '{{ masters + workers }}'
+    loop_control:
+      label: "{{ item.name }}"
