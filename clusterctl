@@ -237,7 +237,7 @@ init)
     exit 1
   fi
   shift
-  bootstrap "$@"
+  init "$@"
 ;;
 start)
   if [ -z "${2:-}" ]; then
