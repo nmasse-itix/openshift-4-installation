@@ -190,6 +190,69 @@ function post_install () {
   done
 }
 
+function install_addon_acmhub () {
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: open-cluster-management
+spec:
+  finalizers:
+  - kubernetes
+EOF
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: open-cluster-management
+  namespace: open-cluster-management
+spec:
+  targetNamespaces:
+  - open-cluster-management
+EOF
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: acm-operator-subscription
+  namespace: open-cluster-management
+spec:
+  sourceNamespace: openshift-marketplace
+  source: redhat-operators
+  channel: release-2.2
+  installPlanApproval: Automatic
+  name: advanced-cluster-management
+EOF
+  while ! oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" -n open-cluster-management get mch --all-namespaces -o yaml &>/dev/null; do
+    echo "Waiting for the MultiClusterHub CRD to appear..."
+    sleep 5
+  done
+  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+apiVersion: operator.open-cluster-management.io/v1
+kind: MultiClusterHub
+metadata:
+  name: multiclusterhub
+  namespace: open-cluster-management
+EOF
+  echo
+  echo "RH-ACM Current state is: $(oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get mch multiclusterhub -n open-cluster-management -o=jsonpath='{.status.phase}')"
+  echo
+  echo "RH-ACM Console: $(oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get route multicloud-console -n open-cluster-management -o jsonpath="https://{.spec.host}")"
+  echo
+}
+
+function install_addon () {
+  local cluster_name="${1:-}"
+  local addon="${2:-}"
+
+  if [ ! -d "$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  install_addon_$addon "$cluster_name"
+}
+
 function shell () {
   local cluster_name="${1:-}"
 
@@ -211,12 +274,17 @@ function shell () {
   # OpenShift
   export KUBECONFIG="$PWD/$cluster_name/auth/kubeconfig"
   export OC_BINARY="$(which oc)"
+  export KUBECTL_BINARY="$(which oc)"
   export CLUSTER_NAME="$cluster_name"
   export PS1="[$CLUSTER_NAME:\w] "
   function oc () {
     "$OC_BINARY" --insecure-skip-tls-verify "$@"
   }
   export -f oc
+  function kubectl () {
+    "$KUBECTL_BINARY" --insecure-skip-tls-verify "$@"
+  }
+  export -f kubectl
   exec /bin/bash
 }
 
@@ -302,6 +370,14 @@ post-install)
   fi
   shift
   post_install "$@"
+;;
+install-addon)
+  if [ -z "${2:-}" -o -z "${3:-}" ]; then
+    echo "Usage: $0 install-addon cluster-name addon-name"
+    exit 1
+  fi
+  shift
+  install_addon "$@"
 ;;
 *)
   echo "Usage: $0 {init|apply|approve-csr|post-install|destroy|shell|ping|start|stop} cluster-name"
