@@ -1,6 +1,7 @@
 base_domain          = "PUT_YOUR_DNS_DOMAIN_HERE"
 external_mac_address = "02:00:00:00:00:04"
 public_cluster_ip    = "1.2.3.4"
+network_ip_range     = "10.10.0.0/24"
 cluster_name         = "__CLUSTER_NAME__"
 bootstrap_nodes      = 1
 acme_account_email   = "your.username@redhat.com"
