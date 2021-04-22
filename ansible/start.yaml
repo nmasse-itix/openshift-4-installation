@@ -18,14 +18,6 @@
     workers: '{{ nodes | selectattr("role", "eq", "worker") | list }}'
     masters: '{{ nodes | selectattr("role", "eq", "master") | list }}'
   tasks:
-  - name: Configure name resolution for the cluster
-    template:
-      src: dnsmasq.conf.j2
-      dest: /etc/NetworkManager/dnsmasq.d/zone-{{ network_domain }}.conf
-  
-  - name: Restart dnsmasq
-    command: pkill -f [d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq
-  
   - name: Start the Load Balancer and the Storage
     community.libvirt.virt:
       name: '{{ item.name }}'
@@ -39,7 +31,7 @@
   - name: Wait for the Load Balancer to appear
     wait_for:
       port: 443
-      host: '{{ lb.ip[1] }}'
+      host: '{{ lb.ip }}'
 
   - name: Wait for the NFS Server to appear
     wait_for:

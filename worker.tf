@@ -12,6 +12,15 @@ resource "libvirt_ignition" "worker_ignition" {
   content = file("${path.module}/${var.cluster_name}/worker.ign")
 }
 
+locals {
+  worker_nodes = [for i in range(var.worker_nodes) : {
+    name = format(local.worker_format, i + 1)
+    ip   = cidrhost(var.network_ip_range, 21 + i)
+    mac  = format(var.network_mac_format, 21 + i)
+    role = "worker"
+  }]
+}
+
 resource "libvirt_domain" "worker" {
   count           = var.worker_nodes
   name            = format(local.worker_format, count.index + 1)
@@ -35,13 +44,12 @@ resource "libvirt_domain" "worker" {
   }
 
   network_interface {
-    network_id = libvirt_network.ocp_net.id
-    addresses  = [cidrhost(var.network_ip_range, 21 + count.index)]
-    hostname   = format("worker%d", count.index + 1)
+    network_name   = var.network_name
+    mac            = element(local.worker_nodes.*.mac, count.index)
+    wait_for_lease = false
+  }
 
-    # When creating the domain resource, wait until the network interface gets
-    # a DHCP lease from libvirt, so that the computed IP addresses will be
-    # available when the domain is up and the plan applied.
-    wait_for_lease = true
+  xml {
+    xslt = file("${path.module}/network.xslt")
   }
 }

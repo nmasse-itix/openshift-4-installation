@@ -33,10 +33,7 @@ terraform {
 }
 
 locals {
-  master_nodes     = [for i in libvirt_domain.master : { name = i.name, ip = i.network_interface.0.addresses[0], role = "master" }]
-  worker_nodes     = [for i in libvirt_domain.worker : { name = i.name, ip = i.network_interface.0.addresses[0], role = "worker" }]
-  bootstrap_nodes  = [for i in libvirt_domain.bootstrap : { name = i.name, ip = i.network_interface.0.addresses[0], role = "bootstrap" }]
-  additional_nodes = [{ name = (libvirt_domain.lb.name), ip = [libvirt_domain.lb.network_interface.0.addresses[0], libvirt_domain.lb.network_interface.1.addresses[0]], role = "lb" }, { name = (libvirt_domain.storage.name), ip = libvirt_domain.storage.network_interface.0.addresses[0], role = "storage" }]
+  additional_nodes = [local.lb_node, local.storage_node]
   all_nodes        = concat(local.additional_nodes, local.master_nodes, local.worker_nodes, local.bootstrap_nodes)
 }
 

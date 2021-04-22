@@ -12,6 +12,15 @@ resource "libvirt_ignition" "master_ignition" {
   content = file("${path.module}/${var.cluster_name}/master.ign")
 }
 
+locals {
+  master_nodes = [for i in range(var.master_nodes) : {
+    name = format(local.master_format, i + 1)
+    ip   = cidrhost(var.network_ip_range, 11 + i)
+    mac  = format(var.network_mac_format, 11 + i)
+    role = "master"
+  }]
+}
+
 resource "libvirt_domain" "master" {
   count           = var.master_nodes
   name            = format(local.master_format, count.index + 1)
@@ -35,13 +44,12 @@ resource "libvirt_domain" "master" {
   }
 
   network_interface {
-    network_id = libvirt_network.ocp_net.id
-    addresses  = [cidrhost(var.network_ip_range, 11 + count.index)]
-    hostname   = format("master%d", count.index + 1)
+    network_name   = var.network_name
+    mac            = element(local.master_nodes.*.mac, count.index)
+    wait_for_lease = false
+  }
 
-    # When creating the domain resource, wait until the network interface gets
-    # a DHCP lease from libvirt, so that the computed IP addresses will be
-    # available when the domain is up and the plan applied.
-    wait_for_lease = true
+  xml {
+    xslt = file("${path.module}/network.xslt")
   }
 }

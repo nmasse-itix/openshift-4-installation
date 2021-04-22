@@ -27,6 +27,15 @@ resource "libvirt_volume" "storage_data_disk" {
   size   = var.storage_disk_size
 }
 
+locals {
+  storage_node = {
+    name = local.storage_name
+    ip   = cidrhost(var.network_ip_range, 6)
+    mac  = format(var.network_mac_format, 6)
+    role = "storage"
+  }
+}
+
 resource "libvirt_domain" "storage" {
   name       = local.storage_name
   vcpu       = var.storage_vcpu
@@ -54,13 +63,16 @@ resource "libvirt_domain" "storage" {
   }
 
   network_interface {
-    network_id = libvirt_network.ocp_net.id
-    addresses  = [cidrhost(var.network_ip_range, 6)]
-    hostname   = "storage"
+    network_name = var.network_name
+    mac          = local.storage_node.mac
 
     # When creating the domain resource, wait until the network interface gets
     # a DHCP lease from libvirt, so that the computed IP addresses will be
     # available when the domain is up and the plan applied.
     wait_for_lease = true
+  }
+
+  xml {
+    xslt = file("${path.module}/network.xslt")
   }
 }

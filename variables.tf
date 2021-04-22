@@ -38,23 +38,24 @@ variable "cluster_name" {
   default = "ocp4"
 }
 
-variable "external_ifname" {
-  type    = string
-  default = "virbr1"
-}
-
-variable "external_mac_address" {
-  type = string
-}
-
 variable "base_domain" {
   type    = string
   default = "ocp.lab"
 }
 
+variable "network_name" {
+  type    = string
+  default = "lab"
+}
+
 variable "network_ip_range" {
   type    = string
-  default = "10.10.3.0/24"
+  default = "192.168.7.0/24"
+}
+
+variable "network_mac_format" {
+  type    = string
+  default = "02:01:07:00:07:%02x"
 }
 
 variable "public_cluster_ip" {

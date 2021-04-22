@@ -32,7 +32,7 @@
       command: info
     register: vm
     until: "vm[item.name].state == 'shutdown'"
-    retries: 24
+    retries: 48
     delay: 5
     loop: '{{ workers }}'
     loop_control:
@@ -52,7 +52,7 @@
       command: info
     register: vm
     until: "vm[item.name].state == 'shutdown'"
-    retries: 24
+    retries: 48
     delay: 5
     loop: '{{ masters }}'
     loop_control:
@@ -67,11 +67,3 @@
     - '{{ storage }}'
     loop_control:
       label: "{{ item.name }}"
-
-  - name: Unconfigure name resolution for the cluster
-    file:
-      path: /etc/NetworkManager/dnsmasq.d/zone-{{ network_domain }}.conf
-      state: absent
-  
-  - name: Restart dnsmasq
-    command: pkill -f [d]nsmasq.*--enable-dbus=org.freedesktop.NetworkManager.dnsmasq

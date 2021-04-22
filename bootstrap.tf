@@ -12,12 +12,22 @@ resource "libvirt_ignition" "bootstrap_ignition" {
   content = file("${path.module}/${var.cluster_name}/bootstrap.ign")
 }
 
+locals {
+  bootstrap_nodes = [for i in range(var.bootstrap_nodes) : {
+    name = local.bootstrap_name
+    ip   = cidrhost(var.network_ip_range, 5)
+    mac  = format(var.network_mac_format, 5)
+    role = "bootstrap"
+  }]
+}
+
 resource "libvirt_domain" "bootstrap" {
   name            = local.bootstrap_name
   count           = var.bootstrap_nodes
   vcpu            = var.bootstrap_vcpu
   memory          = var.bootstrap_memory_size
   coreos_ignition = libvirt_ignition.bootstrap_ignition.id
+  qemu_agent      = true
 
   cpu = {
     mode = "host-passthrough"
@@ -34,13 +44,16 @@ resource "libvirt_domain" "bootstrap" {
   }
 
   network_interface {
-    network_id = libvirt_network.ocp_net.id
-    addresses  = [cidrhost(var.network_ip_range, 5)]
-    hostname   = "bootstrap"
+    network_name = var.network_name
+    mac          = element(local.bootstrap_nodes.*.mac, count.index)
 
     # When creating the domain resource, wait until the network interface gets
     # a DHCP lease from libvirt, so that the computed IP addresses will be
     # available when the domain is up and the plan applied.
     wait_for_lease = true
+  }
+
+  xml {
+    xslt = file("${path.module}/network.xslt")
   }
 }

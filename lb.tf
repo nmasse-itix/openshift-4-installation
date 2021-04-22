@@ -9,20 +9,15 @@ data "template_file" "lb_user_data" {
   template = file("${path.module}/templates/lb/cloud-init.cfg")
   vars = {
     haproxy_cfg = templatefile("${path.module}/templates/lb/haproxy.cfg", {
-      master_nodes    = { for i in libvirt_domain.master : i.name => i.network_interface.0.addresses[0] },
-      worker_nodes    = { for i in libvirt_domain.worker : i.name => i.network_interface.0.addresses[0] },
-      bootstrap_nodes = { for i in libvirt_domain.bootstrap : i.name => i.network_interface.0.addresses[0] }
+      master_nodes    = { for i in local.master_nodes : i.name => i.ip },
+      worker_nodes    = { for i in local.worker_nodes : i.name => i.ip },
+      bootstrap_nodes = { for i in local.bootstrap_nodes : i.name => i.ip }
     })
   }
 }
 
 data "template_file" "lb_network_config" {
   template = file("${path.module}/templates/lb/network-config.cfg")
-  vars = {
-    ip  = cidrhost(var.network_ip_range, 4)
-    dns = cidrhost(var.network_ip_range, 1)
-    gw  = cidrhost(var.network_ip_range, 1)
-  }
 }
 
 resource "libvirt_volume" "lb_disk" {
@@ -31,6 +26,15 @@ resource "libvirt_volume" "lb_disk" {
   pool             = var.pool_name
   base_volume_name = "${var.centos_image}.${var.volume_format}"
   size             = var.lb_disk_size
+}
+
+locals {
+  lb_node = {
+    name = local.lb_name
+    ip   = cidrhost(var.network_ip_range, 4)
+    mac  = format(var.network_mac_format, 4)
+    role = "lb"
+  }
 }
 
 resource "libvirt_domain" "lb" {
@@ -56,9 +60,8 @@ resource "libvirt_domain" "lb" {
   }
 
   network_interface {
-    network_id = libvirt_network.ocp_net.id
-    addresses  = [cidrhost(var.network_ip_range, 4)]
-    hostname   = "lb"
+    network_name = var.network_name
+    mac          = local.lb_node.mac
 
     # When creating the domain resource, wait until the network interface gets
     # a DHCP lease from libvirt, so that the computed IP addresses will be
@@ -66,13 +69,7 @@ resource "libvirt_domain" "lb" {
     wait_for_lease = true
   }
 
-  network_interface {
-    bridge = var.external_ifname
-    mac    = var.external_mac_address
-
-    # When creating the domain resource, wait until the network interface gets
-    # a DHCP lease from libvirt, so that the computed IP addresses will be
-    # available when the domain is up and the plan applied.
-    wait_for_lease = true
+  xml {
+    xslt = file("${path.module}/network.xslt")
   }
 }
