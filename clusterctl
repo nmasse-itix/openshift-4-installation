@@ -46,6 +46,11 @@ function apply () {
     exit 1
   fi
 
+  # Make a backup since the openshift-install command will consume it
+  if [ -f "$cluster_name/install-config.yaml" ]; then
+    cp "$cluster_name/install-config.yaml" "$cluster_name/install-config.yaml.bak"
+  fi
+
   # Create installation files
   openshift-install create manifests --dir="$cluster_name"
   openshift-install create ignition-configs --dir="$cluster_name"
