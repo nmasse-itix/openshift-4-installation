@@ -73,6 +73,6 @@ resource "libvirt_domain" "storage" {
   }
 
   xml {
-    xslt = file("${path.module}/network.xslt")
+    xslt = file("${path.module}/portgroups/${var.network_portgroup}.xslt")
   }
 }

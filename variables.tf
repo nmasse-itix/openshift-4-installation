@@ -48,6 +48,11 @@ variable "network_name" {
   default = "lab"
 }
 
+variable "network_portgroup" {
+  type    = string
+  default = "lab8"
+}
+
 variable "network_ip_range" {
   type    = string
   default = "192.168.7.0/24"

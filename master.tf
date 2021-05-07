@@ -50,6 +50,6 @@ resource "libvirt_domain" "master" {
   }
 
   xml {
-    xslt = file("${path.module}/network.xslt")
+    xslt = file("${path.module}/portgroups/${var.network_portgroup}.xslt")
   }
 }
