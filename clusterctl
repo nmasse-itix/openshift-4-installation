@@ -51,6 +51,10 @@ function apply () {
     cp "$cluster_name/install-config.yaml" "$cluster_name/install-config.yaml.bak"
   fi
 
+  # Include the cluster dir in the path for disconnected installations
+  export PATH="$PWD/$cluster_name:$PATH"
+  openshift-install version
+
   # Create installation files
   openshift-install create manifests --dir="$cluster_name"
   openshift-install create ignition-configs --dir="$cluster_name"
@@ -275,6 +279,9 @@ function shell () {
   export TF_CLI_ARGS_destroy="-var-file=$cluster_name/terraform.tfvars -state=$cluster_name/terraform.tfstate"
   export TF_CLI_ARGS_state_list="-state=$cluster_name/terraform.tfstate"
   export TF_CLI_ARGS_state_rm="-state=$cluster_name/terraform.tfstate"
+
+  # Include the cluster dir in the path for disconnected installations
+  export PATH="$PWD/$cluster_name:$PATH"
 
   # OpenShift
   export KUBECONFIG="$PWD/$cluster_name/auth/kubeconfig"
