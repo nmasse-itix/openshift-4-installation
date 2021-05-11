@@ -9,7 +9,7 @@ resource "libvirt_volume" "worker_disk" {
 
 resource "libvirt_ignition" "worker_ignition" {
   name    = "${var.cluster_name}-worker-ignition"
-  content = file("${path.module}/${var.cluster_name}/worker.ign")
+  content = file("${path.module}/.clusters/${var.cluster_name}/worker.ign")
 }
 
 locals {

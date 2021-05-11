@@ -9,7 +9,7 @@ resource "libvirt_volume" "bootstrap_disk" {
 
 resource "libvirt_ignition" "bootstrap_ignition" {
   name    = "${var.cluster_name}-bootstrap-ignition"
-  content = file("${path.module}/${var.cluster_name}/bootstrap.ign")
+  content = file("${path.module}/.clusters/${var.cluster_name}/bootstrap.ign")
 }
 
 locals {

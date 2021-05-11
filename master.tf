@@ -9,7 +9,7 @@ resource "libvirt_volume" "master_disk" {
 
 resource "libvirt_ignition" "master_ignition" {
   name    = "${var.cluster_name}-master-ignition"
-  content = file("${path.module}/${var.cluster_name}/master.ign")
+  content = file("${path.module}/.clusters/${var.cluster_name}/master.ign")
 }
 
 locals {

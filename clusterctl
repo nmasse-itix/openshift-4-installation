@@ -6,22 +6,20 @@ trap "exit" INT
 function init () {
   local cluster_name="${1:-}"
 
-  if [ -d "$cluster_name" ]; then
+  if [ -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' already initialized !"
     exit 1
   fi
 
-  cluster_name="$1"
-
-  mkdir -p "$cluster_name"
-  sed "s/__CLUSTER_NAME__/$cluster_name/" install-config.yaml > "$cluster_name/install-config.yaml"
-  sed "s/__CLUSTER_NAME__/$cluster_name/" terraform.tfvars > "$cluster_name/terraform.tfvars"
+  mkdir -p ".clusters/$cluster_name"
+  sed "s/__CLUSTER_NAME__/$cluster_name/" install-config.yaml > ".clusters/$cluster_name/install-config.yaml"
+  sed "s/__CLUSTER_NAME__/$cluster_name/" terraform.tfvars > ".clusters/$cluster_name/terraform.tfvars"
 
   echo "Cluster $cluster_name initialized successfully!"
   echo
   echo "Review and adjust the following files to your needs:"
-  echo "- $cluster_name/install-config.yaml"
-  echo "- $cluster_name/terraform.tfvars"
+  echo "- .clusters/$cluster_name/install-config.yaml"
+  echo "- .clusters/$cluster_name/terraform.tfvars"
   echo
   exit 0
 }
@@ -29,13 +27,13 @@ function init () {
 function destroy () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
-  terraform destroy -var-file="$cluster_name/terraform.tfvars" -state="$cluster_name/terraform.tfstate"
-  sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 1/' "$cluster_name/terraform.tfvars"
+  terraform destroy -var-file=".clusters/$cluster_name/terraform.tfvars" -state=".clusters/$cluster_name/terraform.tfstate"
+  sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 1/' ".clusters/$cluster_name/terraform.tfvars"
 }
 
 function apply () {
@@ -47,25 +45,25 @@ function apply () {
   fi
 
   # Make a backup since the openshift-install command will consume it
-  if [ -f "$cluster_name/install-config.yaml" ]; then
-    cp "$cluster_name/install-config.yaml" "$cluster_name/install-config.yaml.bak"
+  if [ -f ".clusters/$cluster_name/install-config.yaml" ]; then
+    cp ".clusters/$cluster_name/install-config.yaml" ".clusters/$cluster_name/install-config.yaml.bak"
   fi
 
   # Include the cluster dir in the path for disconnected installations
-  export PATH="$PWD/$cluster_name:$PATH"
+  export PATH="$PWD/.clusters/$cluster_name:$PATH"
   openshift-install version
 
   # Create installation files
-  openshift-install create manifests --dir="$cluster_name"
-  openshift-install create ignition-configs --dir="$cluster_name"
+  openshift-install create manifests --dir=".clusters/$cluster_name"
+  openshift-install create ignition-configs --dir=".clusters/$cluster_name"
 
   # Provision the infrastructure and wait for bootstrap to complete
-  terraform apply -var-file="$cluster_name/terraform.tfvars" -state="$cluster_name/terraform.tfstate" -auto-approve
-  openshift-install --dir="$cluster_name" wait-for bootstrap-complete --log-level=info
+  terraform apply -var-file=".clusters/$cluster_name/terraform.tfvars" -state=".clusters/$cluster_name/terraform.tfstate" -auto-approve
+  openshift-install --dir=".clusters/$cluster_name" wait-for bootstrap-complete --log-level=info
 
   # Destroy the bootstrap node
-  sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 0/' "$cluster_name/terraform.tfvars"
-  terraform apply -var-file="$cluster_name/terraform.tfvars" -state="$cluster_name/terraform.tfstate" -auto-approve
+  sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 0/' ".clusters/$cluster_name/terraform.tfvars"
+  terraform apply -var-file=".clusters/$cluster_name/terraform.tfvars" -state=".clusters/$cluster_name/terraform.tfstate" -auto-approve
 
   # Auto-approve all pending CSRs
   for i in {0..240}; do
@@ -74,64 +72,64 @@ function apply () {
   done &
 
   # Wait for the installation to complete
-  openshift-install --dir="$cluster_name" wait-for install-complete
+  openshift-install --dir=".clusters/$cluster_name" wait-for install-complete
 }
 
 function ping () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" whoami
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" whoami
 }
 
 function approve_csr () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get csr --no-headers \
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" get csr --no-headers \
      | awk '/Pending/ {print $1}' \
-     | xargs --no-run-if-empty oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" adm certificate approve
+     | xargs --no-run-if-empty oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" adm certificate approve
 }
 
 function start () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
-  ansible-playbook -i "$cluster_name/inventory" ansible/start.yaml
+  ansible-playbook -i ".clusters/$cluster_name/inventory" ansible/start.yaml
 }
 
 function stop () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
-  ansible-playbook -i "$cluster_name/inventory" ansible/stop.yaml
+  ansible-playbook -i ".clusters/$cluster_name/inventory" ansible/stop.yaml
 }
 
 function post_install_nfs () {
   local cluster_name="${1:-}"
 
-  oc apply --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" -f "$cluster_name/registry-pv.yaml"
-  oc patch --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" configs.imageregistry.operator.openshift.io cluster --type=json --patch-file=/dev/fd/0 <<EOF
+  oc apply --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" -f ".clusters/$cluster_name/registry-pv.yaml"
+  oc patch --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" configs.imageregistry.operator.openshift.io cluster --type=json --patch-file=/dev/fd/0 <<EOF
 [{"op": "remove", "path": "/spec/storage" },{"op": "add", "path": "/spec/storage", "value": {"pvc":{"claim": "registry-storage"}}}]
 EOF
-  oc apply --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" -f "$cluster_name/nfs-provisioner.yaml"
-  oc patch --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" configs.imageregistry.operator.openshift.io cluster --type merge --patch-file=/dev/fd/0 <<EOF
+  oc apply --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" -f ".clusters/$cluster_name/nfs-provisioner.yaml"
+  oc patch --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" configs.imageregistry.operator.openshift.io cluster --type merge --patch-file=/dev/fd/0 <<EOF
 {"spec":{"managementState": "Managed"}}
 EOF
 }
@@ -139,20 +137,20 @@ EOF
 function post_install_le () {
   local cluster_name="${1:-}"
 
-  cert_dn="$(openssl x509 -noout -subject -in "$cluster_name/cluster.crt")"
+  cert_dn="$(openssl x509 -noout -subject -in ".clusters/$cluster_name/cluster.crt")"
   cert_cn="${cert_dn#subject=CN = }"
 
   # Deploy certificate to ingress
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" create secret tls router-certs-$(date "+%Y-%m-%d") --cert="$cluster_name/cluster.crt" --key="$cluster_name/cluster.key" -n openshift-ingress --dry-run -o yaml > "$cluster_name/router-certs.yaml"
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f "$cluster_name/router-certs.yaml" -n openshift-ingress
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" patch ingresscontroller default -n openshift-ingress-operator --type=merge --patch-file=/dev/fd/0 <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" create secret tls router-certs-$(date "+%Y-%m-%d") --cert=".clusters/$cluster_name/cluster.crt" --key=".clusters/$cluster_name/cluster.key" -n openshift-ingress --dry-run -o yaml > ".clusters/$cluster_name/router-certs.yaml"
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f ".clusters/$cluster_name/router-certs.yaml" -n openshift-ingress
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" patch ingresscontroller default -n openshift-ingress-operator --type=merge --patch-file=/dev/fd/0 <<EOF
 {"spec": { "defaultCertificate": { "name": "router-certs-$(date "+%Y-%m-%d")" }}}
 EOF
 
   # Deploy certificate to api
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" create secret tls api-certs-$(date "+%Y-%m-%d") --cert="$cluster_name/cluster.crt" --key="$cluster_name/cluster.key" -n openshift-config --dry-run -o yaml > "$cluster_name/api-certs.yaml"
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f "$cluster_name/api-certs.yaml" -n openshift-config
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" patch apiserver cluster --type=merge --patch-file=/dev/fd/0 <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" create secret tls api-certs-$(date "+%Y-%m-%d") --cert=".clusters/$cluster_name/cluster.crt" --key=".clusters/$cluster_name/cluster.key" -n openshift-config --dry-run -o yaml > ".clusters/$cluster_name/api-certs.yaml"
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f ".clusters/$cluster_name/api-certs.yaml" -n openshift-config
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" patch apiserver cluster --type=merge --patch-file=/dev/fd/0 <<EOF
 {"spec":{"servingCerts":{"namedCertificates":[{"names":["$cert_cn"],"servingCertificate":{"name": "api-certs-$(date "+%Y-%m-%d")"}}]}}}
 EOF
 }
@@ -160,9 +158,9 @@ EOF
 function post_install_sso () {
   local cluster_name="${1:-}"
 
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" create secret generic redhat-sso-client-secret -n openshift-config --from-literal="clientSecret=$GOOGLE_CLIENT_SECRET" --dry-run -o yaml > "$cluster_name/sso-secret.yaml"
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f "$cluster_name/sso-secret.yaml"
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" create secret generic redhat-sso-client-secret -n openshift-config --from-literal="clientSecret=$GOOGLE_CLIENT_SECRET" --dry-run -o yaml > ".clusters/$cluster_name/sso-secret.yaml"
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f ".clusters/$cluster_name/sso-secret.yaml"
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f - <<EOF
 apiVersion: config.openshift.io/v1
 kind: OAuth
 metadata:
@@ -178,14 +176,14 @@ spec:
     name: RedHatSSO
     type: Google
 EOF
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" adm policy add-cluster-role-to-user cluster-admin "$OCP_ADMIN"
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" adm policy add-cluster-role-to-user cluster-admin "$OCP_ADMIN"
 }
 
 function post_install () {
   local cluster_name="${1:-}"
   shift
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
@@ -200,7 +198,7 @@ function post_install () {
 }
 
 function install_addon_acmhub () {
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f - <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -209,7 +207,7 @@ spec:
   finalizers:
   - kubernetes
 EOF
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -219,7 +217,7 @@ spec:
   targetNamespaces:
   - open-cluster-management
 EOF
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -232,11 +230,11 @@ spec:
   installPlanApproval: Automatic
   name: advanced-cluster-management
 EOF
-  while ! oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" -n open-cluster-management get mch --all-namespaces -o yaml &>/dev/null; do
+  while ! oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" -n open-cluster-management get mch --all-namespaces -o yaml &>/dev/null; do
     echo "Waiting for the MultiClusterHub CRD to appear..."
     sleep 5
   done
-  oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" apply -f - <<EOF
+  oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" apply -f - <<EOF
 apiVersion: operator.open-cluster-management.io/v1
 kind: MultiClusterHub
 metadata:
@@ -244,9 +242,9 @@ metadata:
   namespace: open-cluster-management
 EOF
   echo
-  echo "RH-ACM Current state is: $(oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get mch multiclusterhub -n open-cluster-management -o=jsonpath='{.status.phase}')"
+  echo "RH-ACM Current state is: $(oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" get mch multiclusterhub -n open-cluster-management -o=jsonpath='{.status.phase}')"
   echo
-  echo "RH-ACM Console: $(oc --insecure-skip-tls-verify --kubeconfig="$cluster_name/auth/kubeconfig" get route multicloud-console -n open-cluster-management -o jsonpath="https://{.spec.host}")"
+  echo "RH-ACM Console: $(oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" get route multicloud-console -n open-cluster-management -o jsonpath="https://{.spec.host}")"
   echo
 }
 
@@ -254,7 +252,7 @@ function install_addon () {
   local cluster_name="${1:-}"
   local addon="${2:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
@@ -265,26 +263,26 @@ function install_addon () {
 function shell () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
 
   # Ansible
-  export DEFAULT_HOST_LIST="$PWD/$cluster_name"
+  export DEFAULT_HOST_LIST="$PWD/.clusters/$cluster_name"
 
   # Terraform
-  export TF_CLI_ARGS_plan="-var-file=$cluster_name/terraform.tfvars -state=$cluster_name/terraform.tfstate"
-  export TF_CLI_ARGS_apply="-var-file=$cluster_name/terraform.tfvars -state=$cluster_name/terraform.tfstate"
-  export TF_CLI_ARGS_destroy="-var-file=$cluster_name/terraform.tfvars -state=$cluster_name/terraform.tfstate"
-  export TF_CLI_ARGS_state_list="-state=$cluster_name/terraform.tfstate"
-  export TF_CLI_ARGS_state_rm="-state=$cluster_name/terraform.tfstate"
+  export TF_CLI_ARGS_plan="-var-file=.clusters/$cluster_name/terraform.tfvars -state=.clusters/$cluster_name/terraform.tfstate"
+  export TF_CLI_ARGS_apply="-var-file=.clusters/$cluster_name/terraform.tfvars -state=.clusters/$cluster_name/terraform.tfstate"
+  export TF_CLI_ARGS_destroy="-var-file=.clusters/$cluster_name/terraform.tfvars -state=.clusters/$cluster_name/terraform.tfstate"
+  export TF_CLI_ARGS_state_list="-state=.clusters/$cluster_name/terraform.tfstate"
+  export TF_CLI_ARGS_state_rm="-state=.clusters/$cluster_name/terraform.tfstate"
 
   # Include the cluster dir in the path for disconnected installations
-  export PATH="$PWD/$cluster_name:$PATH"
+  export PATH="$PWD/.clusters/$cluster_name:$PATH"
 
   # OpenShift
-  export KUBECONFIG="$PWD/$cluster_name/auth/kubeconfig"
+  export KUBECONFIG="$PWD/.clusters/$cluster_name/auth/kubeconfig"
   export OC_BINARY="$(which oc)"
   export KUBECTL_BINARY="$(which oc)"
   export CLUSTER_NAME="$cluster_name"
