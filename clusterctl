@@ -36,10 +36,10 @@ function destroy () {
   sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 1/' ".clusters/$cluster_name/terraform.tfvars"
 }
 
-function apply () {
+function prepare () {
   local cluster_name="${1:-}"
 
-  if [ ! -d "$cluster_name" ]; then
+  if [ ! -d ".clusters/$cluster_name" ]; then
     echo "Cluster '$cluster_name' does not exist!"
     exit 1
   fi
@@ -55,6 +55,19 @@ function apply () {
 
   # Create installation files
   openshift-install create manifests --dir=".clusters/$cluster_name"
+}
+
+function apply () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d ".clusters/$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  prepare "$cluster_name"
+
+  # Create installation files
   openshift-install create ignition-configs --dir=".clusters/$cluster_name"
 
   # Provision the infrastructure and wait for bootstrap to complete
@@ -316,6 +329,14 @@ init)
   fi
   shift
   init "$@"
+;;
+prepare)
+  if [ -z "${2:-}" ]; then
+    echo "Usage: $0 prepare cluster-name"
+    exit 1
+  fi
+  shift
+  prepare "$@"
 ;;
 start)
   if [ -z "${2:-}" ]; then
