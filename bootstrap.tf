@@ -2,14 +2,16 @@ resource "libvirt_volume" "bootstrap_disk" {
   name             = "${local.bootstrap_name}.${var.volume_format}"
   count            = var.bootstrap_nodes
   format           = var.volume_format
-  pool             = var.pool_name
+  pool             = libvirt_pool.cluster_storage.name
   base_volume_name = "${var.coreos_image}.${var.volume_format}"
+  base_volume_pool = var.base_image_pool
   size             = var.bootstrap_disk_size
 }
 
 resource "libvirt_ignition" "bootstrap_ignition" {
   name    = "${var.cluster_name}-bootstrap-ignition"
   content = file("${path.module}/.clusters/${var.cluster_name}/bootstrap.ign")
+  pool    = libvirt_pool.cluster_storage.name
 }
 
 locals {

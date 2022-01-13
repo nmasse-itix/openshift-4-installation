@@ -2,7 +2,7 @@ resource "libvirt_cloudinit_disk" "storage_cloudinit" {
   name           = "${local.storage_name}-cloudinit.iso"
   user_data      = data.template_file.storage_user_data.rendered
   network_config = data.template_file.storage_network_config.rendered
-  pool           = var.pool_name
+  pool           = libvirt_pool.cluster_storage.name
 }
 
 data "template_file" "storage_user_data" {
@@ -16,14 +16,15 @@ data "template_file" "storage_network_config" {
 resource "libvirt_volume" "storage_os_disk" {
   name             = "${local.storage_name}-os.${var.volume_format}"
   format           = var.volume_format
-  pool             = var.pool_name
+  pool             = libvirt_pool.cluster_storage.name
   base_volume_name = "${var.centos_image}.${var.volume_format}"
+  base_volume_pool = var.base_image_pool
 }
 
 resource "libvirt_volume" "storage_data_disk" {
   name   = "${local.storage_name}-data.${var.volume_format}"
   format = var.volume_format
-  pool   = var.pool_name
+  pool   = libvirt_pool.cluster_storage.name
   size   = var.storage_disk_size
 }
 

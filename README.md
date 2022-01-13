@@ -83,8 +83,8 @@ dns=dnsmasq
 Download the required images.
 
 ```sh
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.7/4.7.0/rhcos-4.7.0-x86_64-qemu.x86_64.qcow2.gz |gunzip -c > /var/lib/libvirt/images/rhcos-4.7.0-x86_64-qemu.x86_64.qcow2
-curl -Lo /var/lib/libvirt/images/centos-stream-8.qcow2 http://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210210.0.x86_64.qcow2
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.9/4.9.0/rhcos-4.9.0-x86_64-qemu.x86_64.qcow2.gz |gunzip -c > /var/lib/libvirt/images/base-images/rhcos-4.9.0-x86_64-qemu.x86_64.qcow2
+curl -Lo /var/lib/libvirt/images/base-images/centos-stream-8.qcow2 http://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210210.0.x86_64.qcow2
 ```
 
 ## Install

@@ -32,6 +32,12 @@ terraform {
   }
 }
 
+resource "libvirt_pool" "cluster_storage" {
+  name = var.cluster_name
+  type = "dir"
+  path = "/var/lib/libvirt/images/${var.cluster_name}"
+}
+
 locals {
   additional_nodes = [local.lb_node, local.storage_node]
   all_nodes        = concat(local.additional_nodes, local.master_nodes, local.worker_nodes, local.bootstrap_nodes)

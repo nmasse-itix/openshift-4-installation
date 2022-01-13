@@ -2,7 +2,7 @@ resource "libvirt_cloudinit_disk" "lb_cloudinit" {
   name           = "${local.lb_name}-cloudinit.iso"
   user_data      = data.template_file.lb_user_data.rendered
   network_config = data.template_file.lb_network_config.rendered
-  pool           = var.pool_name
+  pool           = libvirt_pool.cluster_storage.name
 }
 
 data "template_file" "lb_user_data" {
@@ -23,8 +23,9 @@ data "template_file" "lb_network_config" {
 resource "libvirt_volume" "lb_disk" {
   name             = "${local.lb_name}.${var.volume_format}"
   format           = var.volume_format
-  pool             = var.pool_name
+  pool             = libvirt_pool.cluster_storage.name
   base_volume_name = "${var.centos_image}.${var.volume_format}"
+  base_volume_pool = var.base_image_pool
   size             = var.lb_disk_size
 }
 

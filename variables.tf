@@ -13,11 +13,6 @@ variable "bootstrap_nodes" {
   default = 1
 }
 
-variable "pool_name" {
-  type    = string
-  default = "default"
-}
-
 variable "volume_format" {
   type    = string
   default = "qcow2"
@@ -30,7 +25,7 @@ variable "centos_image" {
 
 variable "coreos_image" {
   type    = string
-  default = "rhcos-4.7.0-x86_64-qemu.x86_64"
+  default = "rhcos-4.9.0-x86_64-qemu.x86_64"
 }
 
 variable "cluster_name" {
@@ -144,6 +139,11 @@ variable "bootstrap_memory_size" {
 
 variable "acme_account_email" {
   type = string
+}
+
+variable "base_image_pool" {
+  type    = string
+  default = "base-images"
 }
 
 locals {

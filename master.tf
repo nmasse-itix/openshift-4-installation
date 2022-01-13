@@ -2,14 +2,16 @@ resource "libvirt_volume" "master_disk" {
   name             = "${format(local.master_format, count.index + 1)}.${var.volume_format}"
   count            = var.master_nodes
   format           = var.volume_format
-  pool             = var.pool_name
+  pool             = libvirt_pool.cluster_storage.name
   base_volume_name = "${var.coreos_image}.${var.volume_format}"
+  base_volume_pool = var.base_image_pool
   size             = var.master_disk_size
 }
 
 resource "libvirt_ignition" "master_ignition" {
   name    = "${var.cluster_name}-master-ignition"
   content = file("${path.module}/.clusters/${var.cluster_name}/master.ign")
+  pool    = libvirt_pool.cluster_storage.name
 }
 
 locals {
