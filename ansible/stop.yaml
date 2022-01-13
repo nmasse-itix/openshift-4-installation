@@ -1,17 +1,7 @@
-- name: Add the libvirt server to the inventory
+- name: Stop the OpenShift cluster
   hosts: localhost
   gather_facts: no
-  tasks:
-  - add_host:
-      hostname: '{{ lookup("env", "LIBVIRT_SERVER") }}'
-      ansible_host: '{{ lookup("env", "LIBVIRT_SERVER") }}'
-      ansible_user: '{{ lookup("env", "LIBVIRT_USER") }}'
-      groups: hypervisor
-
-- name: Stop the OpenShift cluster
-  hosts: hypervisor
-  gather_facts: no
-  become: yes
+  become: no
   vars:
     lb: '{{ nodes | selectattr("role", "eq", "lb") | first }}'
     storage: '{{ nodes | selectattr("role", "eq", "storage") | first }}'
@@ -22,6 +12,7 @@
     community.libvirt.virt:
       name: '{{ item.name }}'
       state: shutdown
+      uri: '{{ lookup("env", "LIBVIRT_DEFAULT_URI") }}'
     loop: '{{ workers }}'
     loop_control:
       label: "{{ item.name }}"
@@ -30,6 +21,7 @@
     community.libvirt.virt:
       name: '{{ item.name }}'
       command: info
+      uri: '{{ lookup("env", "LIBVIRT_DEFAULT_URI") }}'
     register: vm
     until: "vm[item.name].state == 'shutdown'"
     retries: 48
@@ -42,6 +34,7 @@
     community.libvirt.virt:
       name: '{{ item.name }}'
       state: shutdown
+      uri: '{{ lookup("env", "LIBVIRT_DEFAULT_URI") }}'
     loop: '{{ masters }}'
     loop_control:
       label: "{{ item.name }}"
@@ -50,6 +43,7 @@
     community.libvirt.virt:
       name: '{{ item.name }}'
       command: info
+      uri: '{{ lookup("env", "LIBVIRT_DEFAULT_URI") }}'
     register: vm
     until: "vm[item.name].state == 'shutdown'"
     retries: 48
@@ -62,6 +56,7 @@
     community.libvirt.virt:
       name: '{{ item.name }}'
       state: shutdown
+      uri: '{{ lookup("env", "LIBVIRT_DEFAULT_URI") }}'
     loop:
     - '{{ lb }}'
     - '{{ storage }}'

@@ -3,6 +3,19 @@
 set -Eeuo pipefail
 trap "exit" INT
 
+function assert_cluster_name () {
+  local cluster_name="${1:-}"
+
+  if [ ! -d ".clusters/$cluster_name" ]; then
+    echo "Cluster '$cluster_name' does not exist!"
+    exit 1
+  fi
+
+  if [ -f ".clusters/$cluster_name/local.env" ]; then
+    source ".clusters/$cluster_name/local.env"
+  fi
+}
+
 function init () {
   local cluster_name="${1:-}"
 
@@ -25,24 +38,16 @@ function init () {
 }
 
 function destroy () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   terraform destroy -var-file=".clusters/$cluster_name/terraform.tfvars" -state=".clusters/$cluster_name/terraform.tfstate"
   sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 1/' ".clusters/$cluster_name/terraform.tfvars"
 }
 
 function prepare () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   # Make a backup since the openshift-install command will consume it
   if [ -f ".clusters/$cluster_name/install-config.yaml" ]; then
@@ -58,12 +63,8 @@ function prepare () {
 }
 
 function apply () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   prepare "$cluster_name"
 
@@ -89,23 +90,15 @@ function apply () {
 }
 
 function ping () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" whoami
 }
 
 function approve_csr () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   oc --insecure-skip-tls-verify --kubeconfig=".clusters/$cluster_name/auth/kubeconfig" get csr --no-headers \
      | awk '/Pending/ {print $1}' \
@@ -113,23 +106,15 @@ function approve_csr () {
 }
 
 function start () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   ansible-playbook -i ".clusters/$cluster_name/inventory" ansible/start.yaml
 }
 
 function stop () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   ansible-playbook -i ".clusters/$cluster_name/inventory" ansible/stop.yaml
 }
@@ -193,13 +178,9 @@ EOF
 }
 
 function post_install () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
   shift
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   if [ $# -eq 0 ]; then
     set nfs sso le
@@ -262,24 +243,16 @@ EOF
 }
 
 function install_addon () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
   local addon="${2:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   install_addon_$addon "$cluster_name"
 }
 
 function shell () {
+  assert_cluster_name "$@"
   local cluster_name="${1:-}"
-
-  if [ ! -d ".clusters/$cluster_name" ]; then
-    echo "Cluster '$cluster_name' does not exist!"
-    exit 1
-  fi
 
   # Ansible
   export DEFAULT_HOST_LIST="$PWD/.clusters/$cluster_name"
@@ -319,7 +292,6 @@ fi
 source local.env
 export LC_ALL=C
 export LANG=C
-export LIBVIRT_DEFAULT_URI="qemu+ssh://$LIBVIRT_USER@$LIBVIRT_SERVER/system"
 
 case "${1:-}" in
 init)
