@@ -31,7 +31,7 @@ resource "libvirt_domain" "bootstrap" {
   coreos_ignition = libvirt_ignition.bootstrap_ignition.id
   qemu_agent      = true
 
-  cpu = {
+  cpu {
     mode = "host-passthrough"
   }
 

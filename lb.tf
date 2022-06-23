@@ -46,7 +46,7 @@ resource "libvirt_domain" "lb" {
   autostart  = false
   qemu_agent = true
 
-  cpu = {
+  cpu {
     mode = "host-passthrough"
   }
 

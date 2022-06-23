@@ -1,9 +1,9 @@
 terraform {
-  required_version = ">= 0.13"
+  required_version = ">= 1.0"
   required_providers {
     libvirt = {
       source  = "dmacvicar/libvirt"
-      version = ">=0.6.3"
+      version = ">=0.6.14"
     }
     local = {
       source  = "hashicorp/local"
@@ -18,8 +18,8 @@ terraform {
       version = "2.1.2"
     }
     gandi = {
-      version = "2.0.0"
-      source  = "github/go-gandi/gandi"
+      version = "2.1.0"
+      source  = "go-gandi/gandi"
     }
     acme = {
       source  = "vancluever/acme"

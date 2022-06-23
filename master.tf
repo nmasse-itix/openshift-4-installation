@@ -31,7 +31,7 @@ resource "libvirt_domain" "master" {
   coreos_ignition = libvirt_ignition.master_ignition.id
   autostart       = false
 
-  cpu = {
+  cpu {
     mode = "host-passthrough"
   }
 
