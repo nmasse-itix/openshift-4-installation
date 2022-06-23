@@ -269,18 +269,9 @@ function shell () {
 
   # OpenShift
   export KUBECONFIG="$PWD/.clusters/$cluster_name/auth/kubeconfig"
-  export OC_BINARY="$(which oc)"
-  export KUBECTL_BINARY="$(which oc)"
   export CLUSTER_NAME="$cluster_name"
   export PS1="[$CLUSTER_NAME:\w] "
-  function oc () {
-    "$OC_BINARY" --insecure-skip-tls-verify "$@"
-  }
-  export -f oc
-  function kubectl () {
-    "$KUBECTL_BINARY" --insecure-skip-tls-verify "$@"
-  }
-  export -f kubectl
+  kubectl config set-cluster "$CLUSTER_NAME" --insecure-skip-tls-verify=true
   exec /bin/bash
 }
 
