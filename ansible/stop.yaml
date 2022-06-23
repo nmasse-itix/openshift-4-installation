@@ -1,5 +1,5 @@
 - name: Stop the OpenShift cluster
-  hosts: localhost
+  hosts: admin
   gather_facts: no
   become: no
   vars:

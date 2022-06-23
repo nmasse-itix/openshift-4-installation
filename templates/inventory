@@ -1,3 +1,6 @@
 [all:vars]
 nodes=${jsonencode(nodes)}
 
+[admin]
+admin.itix.lab ansible_user=nicolas
+
