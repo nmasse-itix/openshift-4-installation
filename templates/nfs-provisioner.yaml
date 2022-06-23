@@ -15,7 +15,7 @@ metadata:
   name: nfs-client-provisioner-runner
 rules:
   - apiGroups: [""]
-    resources: ["persistentvolumes"]
+    resources: ["persistentvolumes","nodes"]
     verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: [""]
     resources: ["persistentvolumeclaims"]
