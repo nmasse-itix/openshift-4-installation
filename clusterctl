@@ -27,12 +27,14 @@ function init () {
   mkdir -p ".clusters/$cluster_name"
   sed "s/__CLUSTER_NAME__/$cluster_name/" install-config.yaml > ".clusters/$cluster_name/install-config.yaml"
   sed "s/__CLUSTER_NAME__/$cluster_name/" terraform.tfvars > ".clusters/$cluster_name/terraform.tfvars"
+  grep LIBVIRT_DEFAULT_URI local.env > ".clusters/$cluster_name/local.env"
 
   echo "Cluster $cluster_name initialized successfully!"
   echo
   echo "Review and adjust the following files to your needs:"
   echo "- .clusters/$cluster_name/install-config.yaml"
   echo "- .clusters/$cluster_name/terraform.tfvars"
+  echo "- .clusters/$cluster_name/local.env"
   echo
   exit 0
 }
@@ -43,6 +45,10 @@ function destroy () {
 
   terraform destroy -var-file=".clusters/$cluster_name/terraform.tfvars" -state=".clusters/$cluster_name/terraform.tfstate"
   sed -i.bak 's/^\s*bootstrap_nodes\s*=\s*.*$/bootstrap_nodes = 1/' ".clusters/$cluster_name/terraform.tfvars"
+  if [ -f ".clusters/$cluster_name/install-config.yaml.bak" ]; then
+    cp ".clusters/$cluster_name/install-config.yaml.bak" ".clusters/$cluster_name/install-config.yaml"
+  fi
+  rm -rf .clusters/$cluster_name/{*.ign,metadata.json,auth,.openshift*,manifests}
 }
 
 function prepare () {
@@ -281,8 +287,8 @@ if [ ! -e "local.env" ]; then
 fi
 
 source local.env
-export LC_ALL=C
-export LANG=C
+export LC_ALL=C.utf-8
+export LANG=C.utf-8
 
 case "${1:-}" in
 init)

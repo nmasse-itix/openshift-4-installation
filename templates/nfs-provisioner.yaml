@@ -110,6 +110,7 @@ metadata:
   name: managed-nfs-storage
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
+    cdi.kubevirt.io/clone-strategy: "copy"
 provisioner: redhat-emea-ssa-team/hetzner-ocp4
 parameters:
   archiveOnDelete: "false"
